@@ -1,0 +1,406 @@
+{
+  "name": "Customer Retention",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1440,
+        -432
+      ],
+      "id": "b5f33eb1-5c17-48be-a5ad-22fbaf9cb3d7",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6dda0f20-6648-4d98-84f9-04f1914fca56",
+              "name": "teamEmail",
+              "value": "ranbeer@gmail.com",
+              "type": "string"
+            },
+            {
+              "id": "51f13c8d-ffba-4d62-b584-cb8877258647",
+              "name": "offerSheetId",
+              "value": "1NZsRSTNSb-czEr4jafr6le4IEv6ikhEr",
+              "type": "string"
+            },
+            {
+              "id": "2b81f7a8-02d9-49b4-b1d7-d195a6fe7fb4",
+              "name": "cancellationSheetId",
+              "value": "1NZsRSTNSb-czEr4jafr6le4IEv6ikhEr",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1216,
+        -432
+      ],
+      "id": "f6e4e251-1a2f-4f9f-aed0-f4e04cc63c92",
+      "name": "Configuration"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1cok1rbTE-dRZBAJZsM_sC55bXA4U9PG7Rkl0VQeSk4Y",
+          "mode": "list",
+          "cachedResultName": "List Subscriptions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cok1rbTE-dRZBAJZsM_sC55bXA4U9PG7Rkl0VQeSk4Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Customers",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -992,
+        -432
+      ],
+      "id": "1461e403-0196-46b6-b93a-ca9aa2f9ee02",
+      "name": "Get cancellations",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "23UJLRueAcA3N6vJ",
+          "name": "Ranbeer Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Find the best retention offer for this customer:\n\nCANCELLATION REASON: {{ $json['Cancellation Reason'] }}\n\nFollow your process to analyze this reason and return your recommendation in the specified format.",
+        "options": {
+          "systemMessage": "ROLE: You are an offer matching specialist for customer retention.\n\nTASK: Match customer cancellation reasons with appropriate retention offers from our available inventory.\n\nINPUT: You will receive:\n- A customer's cancellation reason (text explanation)\n- Access to our retention offers database via Google Sheets tool\n\nOUTPUT: Provide your response in this exact format:\n- OFFER_CODE: [the offer code] OR \"NO_MATCH\"\n- OFFER_NAME: [the offer name] OR \"None\"\n- MATCH_REASONING: [1-2 sentences explaining why this offer addresses their concern, or why no match exists]\n\nCONSTRAINTS:\n- Only recommend offers that directly address the customer's stated cancellation reason\n- Never recommend multiple offers - select only the single best match\n- If the cancellation reason is vague, return NO_MATCH rather than guessing\n- Do not create or modify offer codes - only use existing ones from the database\n\nCAPABILITIES & PROCESS:\n1. First, use the Google Sheets tool to retrieve all available retention offers\n2. Analyze the customer's cancellation reason to identify the core issue (price, features, service quality, competitor, etc.)\n3. Compare the cancellation reason against each offer's intended purpose\n4. Select the offer that most directly resolves their specific concern\n5. If no offer addresses their reason (e.g., they're moving countries and we don't service that area), return NO_MATCH\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -768,
+        -432
+      ],
+      "id": "c550634c-08f8-4518-ad5e-5a4993693fec",
+      "name": "Offer match agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        -208
+      ],
+      "id": "26e85904-f5a9-4338-b62e-d615a68bd4b6",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZGYBN2K6q4HNwRn2",
+          "name": "OpenAi account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1cok1rbTE-dRZBAJZsM_sC55bXA4U9PG7Rkl0VQeSk4Y",
+          "mode": "list",
+          "cachedResultName": "List Subscriptions",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cok1rbTE-dRZBAJZsM_sC55bXA4U9PG7Rkl0VQeSk4Y/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1232287915,
+          "mode": "list",
+          "cachedResultName": "Offers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cok1rbTE-dRZBAJZsM_sC55bXA4U9PG7Rkl0VQeSk4Y/edit#gid=1232287915"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status",
+              "lookupValue": "Active"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        -640,
+        -208
+      ],
+      "id": "5b9f9d23-1eb7-4b73-844f-6470c0e79e66",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "23UJLRueAcA3N6vJ",
+          "name": "Ranbeer Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a retention email\n\nMatched Offer:  {{ $json.output }}\nCancellation Reason: {{ $('Get cancellations').item.json['Cancellation Reason'] }}\n\nCustomer email: {{ $('Get cancellations').item.json.Email }}",
+        "options": {
+          "systemMessage": "ROLE: You are an email writer for customer retention.\n\nTASK: Write a brief, friendly email to convince customers to stay using a matched offer.\n\nINPUT: \n- Matched offer (or \"NO_MATCH\")\n- Customer's cancellation reason\n- Customer email\n\nOUTPUT:\n- If offer is \"NO_MATCH\": return only \"NO_MATCH\"\n- If offer exists: write a 100-150 word email (no subject line)\n\nCONSTRAINTS:\n- Acknowledge their cancellation reason\n- Explain how the offer solves their problem\n- End with: \"Best regards,\\nThe Customer Team\"\n- Be warm and professional, not pushy\n- Include a clear next step for them to take\n\nSTRUCTURE:\n1. Friendly greeting\n2. Acknowledge their concern (1 sentence)\n3. Present the offer as a solution (2-3 sentences)\n4. Call-to-action (1 sentence)\n5. Signature\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -416,
+        -432
+      ],
+      "id": "0053c92f-fbe2-4c5f-bddd-0a63a7814d93",
+      "name": "Email sender Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        -208
+      ],
+      "id": "2d4363e8-480c-4b33-b0ad-1576b88157d2",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "ZGYBN2K6q4HNwRn2",
+          "name": "OpenAi account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "484ff1b5-808c-425d-92d0-8532cab8ad86",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "NO_MATCH",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -64,
+        -432
+      ],
+      "id": "9a7e1a5c-9309-4f8f-b41d-3dea1459b8ac",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Get cancellations').item.json.Email }}",
+        "subject": "Special offer for you!",
+        "emailType": "text",
+        "message": "={{ $('Email sender Agent').item.json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        -528
+      ],
+      "id": "e981b673-d352-461d-b754-83309ed11dcf",
+      "name": "Send offer",
+      "webhookId": "f5faf001-a6fd-4b1b-87fa-394c2e41bda3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "37xqPMSzC46YeKxv",
+          "name": "Ranbeer Gmail"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "ranbeer@gmail.com",
+        "subject": "No matching offer found",
+        "message": "=CustomerID: \n\n{{ $('Get cancellations').item.json['Customer ID'] }}\n\nCancellation reason:{{ $('Get cancellations').item.json['Cancellation Reason'] }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        -336
+      ],
+      "id": "e0447731-2a0c-4a6a-93e8-ed21fe94516b",
+      "name": "no offer found",
+      "webhookId": "53341fd7-690b-4730-960d-955abddfeabb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "37xqPMSzC46YeKxv",
+          "name": "Ranbeer Gmail"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration": {
+      "main": [
+        [
+          {
+            "node": "Get cancellations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get cancellations": {
+      "main": [
+        [
+          {
+            "node": "Offer match agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Offer match agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "Offer match agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offer match agent": {
+      "main": [
+        [
+          {
+            "node": "Email sender Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Email sender Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email sender Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send offer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "no offer found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a3957e95-01ba-402a-977a-a7b5fde088ec",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "af4695fd8dc9c41e9c2b08882c65fac12ffc9a97a274e4847578ee23e8a26fec"
+  },
+  "id": "AwN2LKhw6iftsnCN",
+  "tags": []
+}
