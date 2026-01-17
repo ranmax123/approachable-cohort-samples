@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Idea Tracker</title>
+  <style>
+    body {
+      font-family: Inter, Arial, sans-serif;
+      background: #f1f5f9;
+      padding: 30px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    h1 {
+      margin-bottom: 12px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 20px;
+    }
+
+    form, .panel {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 8px;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    button:hover {
+      background: #1e40af;
+    }
+
+    .idea-card {
+      background: #fff;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      border: 1px solid #e5e7eb;
+    }
+
+    .idea-card:hover {
+      background: #f8fafc;
+    }
+
+    .idea-title {
+      font-weight: 600;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+      background: #e0e7ff;
+      margin-right: 4px;
+    }
+
+    .rating {
+      font-weight: bold;
+      color: #2563eb;
+    }
+
+    .empty {
+      color: #666;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Idea Tracker</h1>
+
+<div class="layout">
+
+  <!-- LEFT: FORM + LIST -->
+  <div>
+    <form id="ideaForm">
+      <input type="text" id="title" placeholder="Idea title" required />
+      <textarea id="notes" rows="4" placeholder="Detailed notes..."></textarea>
+      <input type="text" id="categories" placeholder="Categories (comma separated)" />
+      <input type="number" id="excitement" min="1" max="10" placeholder="Excitement (1–10)" />
+      <button type="submit">Save Idea</button>
+    </form>
+
+    <div id="ideaList"></div>
+  </div>
+
+  <!-- RIGHT: DETAIL VIEW -->
+  <div class="panel" id="detailPanel">
+    <div class="empty">Click an idea to view details</div>
+  </div>
+
+</div>
+
+<script>
+  const form = document.getElementById("ideaForm");
+  const ideaList = document.getElementById("ideaList");
+  const detailPanel = document.getElementById("detailPanel");
+
+  let selectedIndex = null;
+
+  function getIdeas() {
+    return JSON.parse(localStorage.getItem("ideas")) || [];
+  }
+
+  function saveIdeas(ideas) {
+    localStorage.setItem("ideas", JSON.stringify(ideas));
+  }
+
+  function renderList() {
+    const ideas = getIdeas();
+    ideaList.innerHTML = "";
+
+    ideas.forEach((idea, index) => {
+      const div = document.createElement("div");
+      div.className = "idea-card";
+      div.onclick = () => showDetail(index);
+
+      div.innerHTML = `
+        <div class="idea-title">${idea.title}</div>
+        <div class="meta">
+          ${idea.categories.map(c => `<span class="badge">${c}</span>`).join("")}
+          <span class="rating">★ ${idea.excitement}</span>
+        </div>
+      `;
+      ideaList.appendChild(div);
+    });
+  }
+
+  function showDetail(index) {
+    selectedIndex = index;
+    const idea = getIdeas()[index];
+
+    detailPanel.innerHTML = `
+      <h3>${idea.title}</h3>
+      <p>${idea.notes || "No notes added."}</p>
+
+      <h4>Categories</h4>
+      ${idea.categories.map(c => `<span class="badge">${c}</span>`).join("")}
+
+      <h4>Excitement</h4>
+      <p class="rating">${idea.excitement}/10</p>
+
+      <button onclick="enterEditMode()">Edit</button>
+    `;
+  }
+
+  function enterEditMode() {
+    const idea = getIdeas()[selectedIndex];
+
+    detailPanel.innerHTML = `
+      <h3>Edit Idea</h3>
+
+      <input id="editTitle" value="${idea.title}" />
+      <textarea id="editNotes" rows="4">${idea.notes || ""}</textarea>
+      <input id="editCategories" value="${idea.categories.join(", ")}" />
+      <input id="editExcitement" type="number" min="1" max="10" value="${idea.excitement}" />
+
+      <button onclick="saveEdit()">Save</button>
+      <button onclick="showDetail(${selectedIndex})">Cancel</button>
+    `;
+  }
+
+  function saveEdit() {
+    const ideas = getIdeas();
+
+    ideas[selectedIndex] = {
+      ...ideas[selectedIndex],
+      title: document.getElementById("editTitle").value,
+      notes: document.getElementById("editNotes").value,
+      categories: document
+        .getElementById("editCategories")
+        .value.split(",")
+        .map(c => c.trim())
+        .filter(Boolean),
+      excitement: document.getElementById("editExcitement").value
+    };
+
+    saveIdeas(ideas);
+    renderList();
+    showDetail(selectedIndex);
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const idea = {
+      title: title.value,
+      notes: notes.value,
+      categories: categories.value
+        .split(",")
+        .map(c => c.trim())
+        .filter(Boolean),
+      excitement: excitement.value,
+      createdAt: new Date().toISOString()
+    };
+
+    const ideas = getIdeas();
+    ideas.unshift(idea);
+    saveIdeas(ideas);
+
+    form.reset();
+    renderList();
+  });
+
+  renderList();
+</script>
+
+
+</body>
+</html>
