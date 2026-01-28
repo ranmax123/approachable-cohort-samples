@@ -1,2 +1,16 @@
+# Environment variables
 .env
+
+# Python
 venv/
+__pycache__/
+*.pyc
+
+# Node (inside vibe code app)
+vibe\ code\ app/node_modules/
+
+# OS / Editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
