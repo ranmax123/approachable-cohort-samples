@@ -89,7 +89,8 @@ app.get("/api/ideas", authenticateToken, (req, res) => {
       if (err) return res.status(500).json({ error: "Database error" });
       res.json(ideas.map(idea => ({
         ...idea,
-        categories: idea.categories ? idea.categories.split(",") : []
+        categories: idea.categories ? idea.categories.split(",") : [],
+        is_published: idea.is_published || 0
       })));
     }
   );
@@ -165,6 +166,50 @@ app.delete("/api/ideas/:id", authenticateToken, (req, res) => {
         return res.status(404).json({ error: "Idea not found" });
       }
       res.json({ success: true });
+    }
+  );
+});
+
+// Toggle publish/unpublish an idea
+app.patch("/api/ideas/:id/publish", authenticateToken, (req, res) => {
+  const ideaId = req.params.id;
+
+  db.get(
+    `SELECT * FROM ideas WHERE id = ? AND user_id = ?`,
+    [ideaId, req.user.id],
+    (err, idea) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (!idea) return res.status(404).json({ error: "Idea not found" });
+
+      const newPublished = idea.is_published ? 0 : 1;
+
+      db.run(
+        `UPDATE ideas SET is_published = ? WHERE id = ? AND user_id = ?`,
+        [newPublished, ideaId, req.user.id],
+        function (err) {
+          if (err) return res.status(500).json({ error: "Database error" });
+          res.json({ success: true, is_published: newPublished });
+        }
+      );
+    }
+  );
+});
+
+// Get all published ideas (auth required)
+app.get("/api/published", authenticateToken, (req, res) => {
+  db.all(
+    `SELECT ideas.id, ideas.title, ideas.notes, ideas.categories, ideas.excitement, ideas.created_at, users.username
+     FROM ideas
+     JOIN users ON ideas.user_id = users.id
+     WHERE ideas.is_published = 1
+     ORDER BY ideas.created_at DESC`,
+    [],
+    (err, ideas) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json(ideas.map(idea => ({
+        ...idea,
+        categories: idea.categories ? idea.categories.split(",") : []
+      })));
     }
   );
 });

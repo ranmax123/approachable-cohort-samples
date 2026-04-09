@@ -31,6 +31,13 @@ db.serialize(() => {
 
   // Index for faster user_id queries
   db.run(`CREATE INDEX IF NOT EXISTS idx_ideas_user_id ON ideas(user_id)`);
+
+  // Migration: add is_published column if it doesn't exist
+  db.run(`ALTER TABLE ideas ADD COLUMN is_published INTEGER DEFAULT 0`, (err) => {
+    if (err && !err.message.includes("duplicate column name")) {
+      console.error("Migration error:", err.message);
+    }
+  });
 });
 
 module.exports = db;

@@ -197,6 +197,88 @@
     .danger:hover {
       background: #b91c1c;
     }
+
+    /* Nav tabs for My Ideas / Discover */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .nav-tabs button {
+      width: auto;
+      padding: 8px 20px;
+      background: #e5e7eb;
+      color: #374151;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-tabs button.active {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .nav-tabs button:hover:not(.active) {
+      background: #d1d5db;
+    }
+
+    /* Published badge on idea cards */
+    .published-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+      background: #d1fae5;
+      color: #065f46;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    /* Discover view cards */
+    .discover-card {
+      background: #fff;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .discover-card .idea-title {
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .author-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      background: #ede9fe;
+      color: #5b21b6;
+      margin-top: 4px;
+      font-weight: 600;
+    }
+
+    /* Publish button */
+    button.publish {
+      background: #059669;
+    }
+
+    button.publish:hover {
+      background: #047857;
+    }
+
+    button.unpublish {
+      background: #9ca3af;
+    }
+
+    button.unpublish:hover {
+      background: #6b7280;
+    }
   </style>
 </head>
 <body>
@@ -239,6 +321,13 @@
     <button class="logout-btn secondary" id="logoutBtn">Logout</button>
   </div>
 
+  <div class="nav-tabs">
+    <button class="nav-tab-btn active" data-view="myIdeas">My Ideas</button>
+    <button class="nav-tab-btn" data-view="discover">Discover</button>
+  </div>
+
+  <!-- MY IDEAS VIEW -->
+  <div id="myIdeasView">
   <div class="layout">
 
     <!-- LEFT: FORM + LIST -->
@@ -260,6 +349,12 @@
     </div>
 
   </div>
+  </div>
+
+  <!-- DISCOVER VIEW -->
+  <div id="discoverView" style="display: none;">
+    <div id="discoverList"></div>
+  </div>
 
 </div>
 
@@ -272,6 +367,15 @@
 
   const authScreen = document.getElementById("authScreen");
   const appScreen = document.getElementById("appScreen");
+
+  function escapeHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   // Show correct screen based on auth state
   function updateAuthUI() {
@@ -286,13 +390,31 @@
     }
   }
 
-  // Tab switching
+  // Auth tab switching
   document.querySelectorAll(".tab-btn").forEach(btn => {
     btn.addEventListener("click", (e) => {
       document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
       document.querySelectorAll(".auth-form").forEach(f => f.classList.remove("active"));
       e.target.classList.add("active");
       document.getElementById(e.target.dataset.tab + "Form").classList.add("active");
+    });
+  });
+
+  // Nav tab switching (My Ideas / Discover)
+  document.querySelectorAll(".nav-tab-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll(".nav-tab-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      const view = e.target.dataset.view;
+      if (view === "myIdeas") {
+        document.getElementById("myIdeasView").style.display = "block";
+        document.getElementById("discoverView").style.display = "none";
+        renderList();
+      } else {
+        document.getElementById("myIdeasView").style.display = "none";
+        document.getElementById("discoverView").style.display = "block";
+        renderDiscover();
+      }
     });
   });
 
@@ -417,10 +539,13 @@
 
       const categories = Array.isArray(idea.categories) ? idea.categories : [];
       div.innerHTML = `
-        <div class="idea-title">${idea.title}</div>
+        <div class="idea-title">
+          ${escapeHtml(idea.title)}
+          ${idea.is_published ? '<span class="published-badge">Published</span>' : ""}
+        </div>
         <div class="meta">
-          ${categories.map(c => `<span class="badge">${c}</span>`).join("")}
-          <span class="rating">★ ${idea.excitement}</span>
+          ${categories.map(c => `<span class="badge">${escapeHtml(c)}</span>`).join("")}
+          <span class="rating">★ ${escapeHtml(idea.excitement)}</span>
         </div>
       `;
       ideaList.appendChild(div);
@@ -430,23 +555,67 @@
   function showDetail(idea, index) {
     selectedIndex = idea.id;
     const categories = Array.isArray(idea.categories) ? idea.categories : [];
+    const isPublished = idea.is_published === 1 || idea.is_published === true;
 
     const detailPanel = document.getElementById("detailPanel");
     detailPanel.innerHTML = `
-      <h3>${idea.title}</h3>
-      <p>${idea.notes || "No notes added."}</p>
+      <h3>${escapeHtml(idea.title)}</h3>
+      <p>${idea.notes ? escapeHtml(idea.notes) : "No notes added."}</p>
 
       <h4>Categories</h4>
-      ${categories.map(c => `<span class="badge">${c}</span>`).join("")}
+      ${categories.map(c => `<span class="badge">${escapeHtml(c)}</span>`).join("")}
 
       <h4>Excitement</h4>
-      <p class="rating">${idea.excitement}/10</p>
+      <p class="rating">${escapeHtml(idea.excitement)}/10</p>
 
       <div class="button-group">
         <button onclick="enterEditMode(${JSON.stringify(idea).replaceAll('"', '&quot;')})">Edit</button>
+        <button class="${isPublished ? 'unpublish' : 'publish'}" onclick="togglePublish(${idea.id})">
+          ${isPublished ? "Unpublish" : "Publish"}
+        </button>
         <button class="danger" onclick="deleteIdea(${idea.id})">Delete</button>
       </div>
     `;
+  }
+
+  async function togglePublish(ideaId) {
+    const result = await apiCall("PATCH", `/api/ideas/${ideaId}/publish`);
+    if (result && result.success !== undefined) {
+      const ideas = await apiCall("GET", "/api/ideas");
+      if (!ideas) return;
+      const updated = ideas.find(i => i.id === ideaId);
+      if (updated) {
+        renderList();
+        showDetail(updated, 0);
+      }
+    }
+  }
+
+  async function renderDiscover() {
+    const ideas = await apiCall("GET", "/api/published");
+    const discoverList = document.getElementById("discoverList");
+    discoverList.innerHTML = "";
+
+    if (!ideas || ideas.length === 0) {
+      discoverList.innerHTML = '<div class="empty">No published ideas yet. Be the first to publish one!</div>';
+      return;
+    }
+
+    ideas.forEach(idea => {
+      const categories = Array.isArray(idea.categories) ? idea.categories : [];
+      const div = document.createElement("div");
+      div.className = "discover-card";
+      div.innerHTML = `
+        <div class="idea-title">${escapeHtml(idea.title)}</div>
+        <div><span class="author-badge">@${escapeHtml(idea.username)}</span></div>
+        <p style="margin-top:8px;color:#374151;">${idea.notes ? escapeHtml(idea.notes) : "No notes added."}</p>
+        <div class="meta" style="margin-top:6px;">
+          ${categories.map(c => `<span class="badge">${escapeHtml(c)}</span>`).join("")}
+          <span class="rating">★ ${escapeHtml(idea.excitement)}</span>
+        </div>
+      `;
+      discoverList.appendChild(div);
+    });
   }
 
   async function enterEditMode(idea) {
