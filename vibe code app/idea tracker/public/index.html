@@ -368,6 +368,15 @@
   const authScreen = document.getElementById("authScreen");
   const appScreen = document.getElementById("appScreen");
 
+  function escapeHtml(str) {
+    return String(str ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   // Show correct screen based on auth state
   function updateAuthUI() {
     if (authToken && currentUserId) {
@@ -531,12 +540,12 @@
       const categories = Array.isArray(idea.categories) ? idea.categories : [];
       div.innerHTML = `
         <div class="idea-title">
-          ${idea.title}
+          ${escapeHtml(idea.title)}
           ${idea.is_published ? '<span class="published-badge">Published</span>' : ""}
         </div>
         <div class="meta">
-          ${categories.map(c => `<span class="badge">${c}</span>`).join("")}
-          <span class="rating">★ ${idea.excitement}</span>
+          ${categories.map(c => `<span class="badge">${escapeHtml(c)}</span>`).join("")}
+          <span class="rating">★ ${escapeHtml(idea.excitement)}</span>
         </div>
       `;
       ideaList.appendChild(div);
@@ -550,18 +559,18 @@
 
     const detailPanel = document.getElementById("detailPanel");
     detailPanel.innerHTML = `
-      <h3>${idea.title}</h3>
-      <p>${idea.notes || "No notes added."}</p>
+      <h3>${escapeHtml(idea.title)}</h3>
+      <p>${idea.notes ? escapeHtml(idea.notes) : "No notes added."}</p>
 
       <h4>Categories</h4>
-      ${categories.map(c => `<span class="badge">${c}</span>`).join("")}
+      ${categories.map(c => `<span class="badge">${escapeHtml(c)}</span>`).join("")}
 
       <h4>Excitement</h4>
-      <p class="rating">${idea.excitement}/10</p>
+      <p class="rating">${escapeHtml(idea.excitement)}/10</p>
 
       <div class="button-group">
         <button onclick="enterEditMode(${JSON.stringify(idea).replaceAll('"', '&quot;')})">Edit</button>
-        <button class="${isPublished ? 'unpublish' : 'publish'}" onclick="togglePublish(${idea.id}, ${isPublished ? 1 : 0})">
+        <button class="${isPublished ? 'unpublish' : 'publish'}" onclick="togglePublish(${idea.id})">
           ${isPublished ? "Unpublish" : "Publish"}
         </button>
         <button class="danger" onclick="deleteIdea(${idea.id})">Delete</button>
@@ -569,7 +578,7 @@
     `;
   }
 
-  async function togglePublish(ideaId, currentState) {
+  async function togglePublish(ideaId) {
     const result = await apiCall("PATCH", `/api/ideas/${ideaId}/publish`);
     if (result && result.success !== undefined) {
       const ideas = await apiCall("GET", "/api/ideas");
@@ -597,12 +606,12 @@
       const div = document.createElement("div");
       div.className = "discover-card";
       div.innerHTML = `
-        <div class="idea-title">${idea.title}</div>
-        <div><span class="author-badge">@${idea.username}</span></div>
-        <p style="margin-top:8px;color:#374151;">${idea.notes || "No notes added."}</p>
+        <div class="idea-title">${escapeHtml(idea.title)}</div>
+        <div><span class="author-badge">@${escapeHtml(idea.username)}</span></div>
+        <p style="margin-top:8px;color:#374151;">${idea.notes ? escapeHtml(idea.notes) : "No notes added."}</p>
         <div class="meta" style="margin-top:6px;">
-          ${categories.map(c => `<span class="badge">${c}</span>`).join("")}
-          <span class="rating">★ ${idea.excitement}</span>
+          ${categories.map(c => `<span class="badge">${escapeHtml(c)}</span>`).join("")}
+          <span class="rating">★ ${escapeHtml(idea.excitement)}</span>
         </div>
       `;
       discoverList.appendChild(div);

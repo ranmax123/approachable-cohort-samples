@@ -34,7 +34,9 @@ db.serialize(() => {
 
   // Migration: add is_published column if it doesn't exist
   db.run(`ALTER TABLE ideas ADD COLUMN is_published INTEGER DEFAULT 0`, (err) => {
-    // Ignore error if column already exists
+    if (err && !err.message.includes("duplicate column name")) {
+      console.error("Migration error:", err.message);
+    }
   });
 });
 
