@@ -24,10 +24,14 @@ db.serialize(() => {
       notes TEXT,
       categories TEXT,
       excitement INTEGER CHECK(excitement >= 1 AND excitement <= 10),
+      is_published INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     )
   `);
+
+  // Add is_published column if it doesn't exist (for existing databases)
+  db.run(`ALTER TABLE ideas ADD COLUMN is_published INTEGER DEFAULT 0`, () => {});
 
   // Index for faster user_id queries
   db.run(`CREATE INDEX IF NOT EXISTS idx_ideas_user_id ON ideas(user_id)`);
