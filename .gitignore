@@ -8,6 +8,11 @@ __pycache__/
 
 # Node (inside vibe code app)
 vibe\ code\ app/node_modules/
+vibe\ code\ app/idea\ tracker/node_modules/
+node_modules/
+
+# SQLite database files
+*.db
 
 # OS / Editor junk
 .DS_Store
