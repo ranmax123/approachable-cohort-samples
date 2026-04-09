@@ -197,6 +197,72 @@
     .danger:hover {
       background: #b91c1c;
     }
+
+    .app-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .app-tab-btn {
+      width: auto;
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: #e5e7eb;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #000;
+      margin-bottom: 0;
+    }
+
+    .app-tab-btn.active {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .app-tab-btn:hover:not(.active) {
+      background: #d1d5db;
+    }
+
+    .publish-btn {
+      background: #059669;
+      color: #fff;
+    }
+
+    .publish-btn:hover {
+      background: #047857;
+    }
+
+    .unpublish-btn {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .unpublish-btn:hover {
+      background: #d1d5db;
+    }
+
+    .published-card {
+      background: #fff;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .published-card .idea-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .yours-label {
+      font-size: 11px;
+      color: #2563eb;
+      font-style: italic;
+      margin-left: 6px;
+    }
   </style>
 </head>
 <body>
@@ -239,6 +305,11 @@
     <button class="logout-btn secondary" id="logoutBtn">Logout</button>
   </div>
 
+  <div class="app-tabs">
+    <button class="app-tab-btn active" data-view="myIdeas">My Ideas</button>
+    <button class="app-tab-btn" data-view="published">Published Ideas</button>
+  </div>
+
   <div class="layout">
 
     <!-- LEFT: FORM + LIST -->
@@ -259,6 +330,12 @@
       <div class="empty">Click an idea to view details</div>
     </div>
 
+  </div>
+
+  <!-- PUBLISHED IDEAS VIEW -->
+  <div id="publishedView" style="display: none;">
+    <h3 style="margin-bottom: 16px;">Published Ideas</h3>
+    <div id="publishedList"></div>
   </div>
 
 </div>
@@ -285,6 +362,23 @@
       appScreen.style.display = "none";
     }
   }
+
+  // Tab switching (app-level)
+  document.querySelectorAll(".app-tab-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      document.querySelectorAll(".app-tab-btn").forEach(b => b.classList.remove("active"));
+      e.target.classList.add("active");
+      const view = e.target.dataset.view;
+      if (view === "published") {
+        document.querySelector(".layout").style.display = "none";
+        document.getElementById("publishedView").style.display = "block";
+        renderPublishedList();
+      } else {
+        document.querySelector(".layout").style.display = "grid";
+        document.getElementById("publishedView").style.display = "none";
+      }
+    });
+  });
 
   // Tab switching
   document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -430,6 +524,7 @@
   function showDetail(idea, index) {
     selectedIndex = idea.id;
     const categories = Array.isArray(idea.categories) ? idea.categories : [];
+    const isPublished = idea.is_published === 1 || idea.is_published === true;
 
     const detailPanel = document.getElementById("detailPanel");
     detailPanel.innerHTML = `
@@ -444,6 +539,7 @@
 
       <div class="button-group">
         <button onclick="enterEditMode(${JSON.stringify(idea).replaceAll('"', '&quot;')})">Edit</button>
+        <button class="${isPublished ? 'unpublish-btn' : 'publish-btn'}" onclick="togglePublish(${idea.id}, ${isPublished ? 1 : 0})">${isPublished ? 'Unpublish' : 'Publish'}</button>
         <button class="danger" onclick="deleteIdea(${idea.id})">Delete</button>
       </div>
     `;
@@ -485,8 +581,86 @@
     });
 
     if (result && result.success) {
-      renderList();
+      const ideas = await apiCall("GET", "/api/ideas");
+      if (ideas) {
+        const ideaList = document.getElementById("ideaList");
+        ideaList.innerHTML = "";
+        ideas.forEach((idea, index) => {
+          const div = document.createElement("div");
+          div.className = "idea-card";
+          div.onclick = () => showDetail(idea, index);
+          const cats = Array.isArray(idea.categories) ? idea.categories : [];
+          div.innerHTML = `
+            <div class="idea-title">${idea.title}</div>
+            <div class="meta">
+              ${cats.map(c => `<span class="badge">${c}</span>`).join("")}
+              <span class="rating">★ ${idea.excitement}</span>
+            </div>
+          `;
+          ideaList.appendChild(div);
+        });
+        const updated = ideas.find(i => i.id === ideaId);
+        if (updated) showDetail(updated, 0);
+      }
     }
+  }
+
+  async function togglePublish(ideaId, currentState) {
+    const newState = currentState === 1 ? 0 : 1;
+    const result = await apiCall("PATCH", `/api/ideas/${ideaId}/publish`, { is_published: newState });
+    if (result && result.success) {
+      const ideas = await apiCall("GET", "/api/ideas");
+      if (ideas) {
+        const ideaList = document.getElementById("ideaList");
+        ideaList.innerHTML = "";
+        ideas.forEach((idea, index) => {
+          const div = document.createElement("div");
+          div.className = "idea-card";
+          div.onclick = () => showDetail(idea, index);
+          const cats = Array.isArray(idea.categories) ? idea.categories : [];
+          div.innerHTML = `
+            <div class="idea-title">${idea.title}</div>
+            <div class="meta">
+              ${cats.map(c => `<span class="badge">${c}</span>`).join("")}
+              <span class="rating">★ ${idea.excitement}</span>
+            </div>
+          `;
+          ideaList.appendChild(div);
+        });
+        const updated = ideas.find(i => i.id === ideaId);
+        if (updated) showDetail(updated, 0);
+      }
+    }
+  }
+
+  async function renderPublishedList() {
+    const ideas = await apiCall("GET", "/api/ideas/published");
+    const publishedList = document.getElementById("publishedList");
+    if (!ideas) return;
+
+    if (ideas.length === 0) {
+      publishedList.innerHTML = '<div class="empty">No published ideas yet.</div>';
+      return;
+    }
+
+    publishedList.innerHTML = "";
+    ideas.forEach(idea => {
+      const isYours = String(idea.user_id) === String(currentUserId);
+      const div = document.createElement("div");
+      div.className = "published-card";
+      div.innerHTML = `
+        <div class="idea-title">
+          ${idea.title}
+          ${isYours ? '<span class="yours-label">(yours)</span>' : ''}
+        </div>
+        <div class="meta">
+          <span>by <strong>${idea.author}</strong></span>
+          &nbsp;·&nbsp;
+          <span class="rating">★ ${idea.excitement}</span>
+        </div>
+      `;
+      publishedList.appendChild(div);
+    });
   }
 
   async function deleteIdea(ideaId) {

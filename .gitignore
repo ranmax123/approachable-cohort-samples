@@ -8,6 +8,7 @@ __pycache__/
 
 # Node (inside vibe code app)
 vibe\ code\ app/node_modules/
+vibe\ code\ app/idea\ tracker/node_modules/
 
 # OS / Editor junk
 .DS_Store

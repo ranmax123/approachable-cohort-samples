@@ -169,6 +169,45 @@ app.delete("/api/ideas/:id", authenticateToken, (req, res) => {
   );
 });
 
+// Toggle publish state for an idea
+app.patch("/api/ideas/:id/publish", authenticateToken, (req, res) => {
+  const ideaId = req.params.id;
+  const { is_published } = req.body;
+
+  if (is_published !== 0 && is_published !== 1) {
+    return res.status(400).json({ error: "is_published must be 0 or 1" });
+  }
+
+  db.run(
+    `UPDATE ideas SET is_published = ? WHERE id = ? AND user_id = ?`,
+    [is_published, ideaId, req.user.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Idea not found" });
+      }
+      res.json({ success: true, is_published });
+    }
+  );
+});
+
+// Get all published ideas (across all users)
+app.get("/api/ideas/published", authenticateToken, (req, res) => {
+  db.all(
+    `SELECT ideas.id, ideas.title, ideas.excitement, ideas.created_at, ideas.user_id,
+            users.username as author
+     FROM ideas
+     JOIN users ON ideas.user_id = users.id
+     WHERE ideas.is_published = 1
+     ORDER BY ideas.created_at DESC`,
+    [],
+    (err, ideas) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      res.json(ideas);
+    }
+  );
+});
+
 // Serve static files
 app.use(express.static("public"));
 
